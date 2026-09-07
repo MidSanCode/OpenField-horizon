@@ -1,0 +1,9 @@
+# OpenField Horizon web client robots.txt
+# Public content (feed, posts, camps, profiles, announcements) is crawlable;
+# private/account surfaces are disallowed and also carry noindex meta.
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /settings
+Disallow: /compose
+Disallow: /chat

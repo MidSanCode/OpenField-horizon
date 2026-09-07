@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Horizon: a rising sun over the horizon line, M3 purple palette. -->
+  <circle cx="32" cy="32" r="30" fill="#6750A4"/>
+  <path d="M12 40 a20 20 0 0 1 40 0 z" fill="#EADDFF"/>
+  <rect x="10" y="40" width="44" height="4" rx="2" fill="#D0BCFF"/>
+</svg>

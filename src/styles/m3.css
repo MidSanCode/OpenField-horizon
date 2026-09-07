@@ -1,0 +1,334 @@
+/**
+ * Material 3 design tokens and CSS. The palette follows the M3 baseline
+ * (purple seed) with light/dark driven by `prefers-color-scheme` plus a
+ * manual override class. Components consume the CSS variables only — no
+ * runtime CSS-in-JS — keeping the bundle lean and crawlable.
+ */
+
+:root {
+  /* M3 baseline light scheme (seed #6750A4). */
+  --md-primary: #6750a4;
+  --md-on-primary: #ffffff;
+  --md-primary-container: #eaddff;
+  --md-on-primary-container: #21005d;
+  --md-secondary: #625b71;
+  --md-on-secondary: #ffffff;
+  --md-secondary-container: #e8def8;
+  --md-on-secondary-container: #1d192b;
+  --md-tertiary: #7d5260;
+  --md-tertiary-container: #ffd8e4;
+  --md-on-tertiary-container: #31111d;
+  --md-error: #b3261e;
+  --md-on-error: #ffffff;
+  --md-error-container: #f9dedc;
+  --md-surface: #fef7ff;
+  --md-on-surface: #1d1b20;
+  --md-surface-variant: #e7e0ec;
+  --md-on-surface-variant: #49454f;
+  --md-surface-container: #f3edf7;
+  --md-surface-container-high: #ece6f0;
+  --md-outline: #79747e;
+  --md-outline-variant: #cac4d0;
+  --md-inverse-surface: #322f35;
+  --md-inverse-on-surface: #f5eff7;
+
+  --md-radius-xs: 8px;
+  --md-radius-sm: 12px;
+  --md-radius-md: 16px;
+  --md-radius-lg: 28px;
+  --md-radius-full: 999px;
+
+  --md-elev-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --md-elev-2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --md-elev-3: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  --content-max: 720px;
+  --nav-width: 260px;
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --md-primary: #d0bcff;
+  --md-on-primary: #381e72;
+  --md-primary-container: #4f378b;
+  --md-on-primary-container: #eaddff;
+  --md-secondary: #ccc2dc;
+  --md-on-secondary: #332d41;
+  --md-secondary-container: #4a4458;
+  --md-on-secondary-container: #e8def8;
+  --md-tertiary: #efb8c8;
+  --md-tertiary-container: #633b48;
+  --md-on-tertiary-container: #ffd8e4;
+  --md-error: #f2b8b5;
+  --md-on-error: #601410;
+  --md-error-container: #8c1d18;
+  --md-surface: #141218;
+  --md-on-surface: #e6e0e9;
+  --md-surface-variant: #49454f;
+  --md-on-surface-variant: #cac4d0;
+  --md-surface-container: #211f26;
+  --md-surface-container-high: #2b2930;
+  --md-outline: #938f99;
+  --md-outline-variant: #49454f;
+  --md-inverse-surface: #e6e0e9;
+  --md-inverse-on-surface: #322f35;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+  font-family: Roboto, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--md-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+img {
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+}
+
+/* ---- M3 primitives -------------------------------------------------- */
+
+.m3-card {
+  background: var(--md-surface-container);
+  border-radius: var(--md-radius-md);
+  padding: 16px;
+  margin: 0 0 12px;
+}
+
+.m3-card--elevated {
+  box-shadow: var(--md-elev-1);
+}
+
+.m3-filled-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+  border-radius: var(--md-radius-full);
+  padding: 9px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.m3-filled-button:hover {
+  box-shadow: var(--md-elev-1);
+  filter: brightness(1.06);
+}
+
+.m3-filled-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.m3-tonal-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  border: none;
+  border-radius: var(--md-radius-full);
+  padding: 9px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.m3-tonal-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.m3-text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--md-primary);
+  border: none;
+  border-radius: var(--md-radius-full);
+  padding: 9px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.m3-text-button--danger {
+  color: var(--md-error);
+}
+
+.m3-input {
+  width: 100%;
+  background: var(--md-surface-container-high);
+  color: var(--md-on-surface);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-radius-xs);
+  padding: 11px 14px;
+  font: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.m3-input:focus {
+  border-color: var(--md-primary);
+}
+
+.m3-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  border-radius: var(--md-radius-full);
+  padding: 3px 12px;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.m3-chip--selectable {
+  cursor: pointer;
+  border: none;
+}
+
+.m3-chip--active {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.m3-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  border-radius: var(--md-radius-full);
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.m3-snackbar {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  background: var(--md-inverse-surface);
+  color: var(--md-inverse-on-surface);
+  border-radius: var(--md-radius-xs);
+  padding: 12px 20px;
+  font-size: 14px;
+  box-shadow: var(--md-elev-3);
+  z-index: 300;
+  animation: m3-snackbar-in 0.2s ease;
+}
+
+@keyframes m3-snackbar-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.m3-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+}
+
+.m3-dialog {
+  background: var(--md-surface-container-high);
+  color: var(--md-on-surface);
+  border-radius: var(--md-radius-lg);
+  padding: 24px;
+  width: min(420px, 100%);
+  max-height: 86vh;
+  overflow: auto;
+  box-shadow: var(--md-elev-3);
+}
+
+.m3-dialog h3 {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
+.m3-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.m3-title-medium {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.m3-body-medium {
+  font-size: 14px;
+}
+
+.m3-label-small {
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+}
+
+.m3-error-text {
+  color: var(--md-error);
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+
+/* ---- layout ---------------------------------------------------------- */
+
+.page {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 20px 16px 96px;
+}
+
+.page--wide {
+  max-width: 1080px;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 14px 12px 84px;
+  }
+}

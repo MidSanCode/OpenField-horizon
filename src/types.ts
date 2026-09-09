@@ -72,6 +72,8 @@ export interface Post {
   quoted_post?: Post | null
   pinned?: boolean
   camp_id?: number
+  /** True when camp managers pinned this post within its camp feed. */
+  camp_pinned?: boolean
 }
 
 export interface Reply {
@@ -101,9 +103,15 @@ export interface Camp {
   creator_name?: string
   is_visible: boolean
   direct_join: boolean
+  /** Whether plain members may post; false = owner/admins only. */
+  member_post?: boolean
+  /** Whether plain members may pin their own posts in the camp. */
+  member_pin?: boolean
   member_count: number
   post_count: number
   is_member: boolean
+  /** The viewer's camp role: owner/admin/member; absent for non-members. */
+  my_role?: string
   created_at: string
   updated_at: string
 }

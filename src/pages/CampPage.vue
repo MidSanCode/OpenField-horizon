@@ -6,6 +6,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { api } from '@/api'
+import { ApiError } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
 import { useSnackbarStore } from '@/stores/snackbar'
 import { t } from '@/i18n'
@@ -21,6 +22,8 @@ const camp = ref<Camp | null>(null)
 const posts = ref<Post[]>([])
 const loading = ref(false)
 const failed = ref(false)
+/** True when the members-only feed answered 403 — show a join hint. */
+const membersOnly = ref(false)
 
 const campId = computed(() => route.params.id as string)
 
@@ -30,10 +33,22 @@ watchSeo(() => (camp.value ? { title: `${camp.value.name} · 营地 · 地平线
 async function load() {
   loading.value = true
   failed.value = false
+  membersOnly.value = false
   try {
-    const [campRes, postsRes] = await Promise.all([api.getCamp(campId.value), api.getCampPosts(campId.value)])
+    // Camp metadata first (public); the feed may 403 for non-members.
+    const campRes = await api.getCamp(campId.value)
     camp.value = campRes
-    posts.value = postsRes.posts ?? []
+    try {
+      const postsRes = await api.getCampPosts(campId.value)
+      posts.value = postsRes.posts ?? []
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 403) {
+        membersOnly.value = true
+        posts.value = []
+      } else {
+        throw e
+      }
+    }
   } catch {
     failed.value = true
   } finally {
@@ -91,6 +106,13 @@ onMounted(() => void load())
 
     <p v-if="failed" class="empty">{{ t('loadFailed') }}</p>
 
+    <div v-else-if="membersOnly" class="m3-card locked">
+      <p class="locked__title">🔒 {{ t('campMembersOnly') }}</p>
+      <button v-if="camp && !camp.is_member" class="m3-filled-button" @click="join">
+        {{ t('campJoin') }}
+      </button>
+    </div>
+
     <template v-if="camp?.is_member">
       <div class="m3-card composer">
         <RouterLink :to="{ name: 'compose', query: { camp: camp.id } }" class="m3-filled-button">
@@ -135,5 +157,19 @@ onMounted(() => void load())
   text-align: center;
   color: var(--md-on-surface-variant);
   padding: 32px 0;
+}
+
+.locked {
+  text-align: center;
+  padding: 28px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.locked__title {
+  margin: 0;
+  color: var(--md-on-surface-variant);
 }
 </style>

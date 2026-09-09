@@ -77,10 +77,18 @@ async function react(reaction: string) {
   }
 }
 
+/** Camp posts toggle the camp-scoped pin; global posts the profile pin. */
+const campScope = computed(() => (props.post.camp_id ?? 0) > 0)
+const pinnedNow = computed(() => (campScope.value ? props.post.camp_pinned : props.post.pinned) ?? false)
+
 async function togglePinned() {
   try {
-    await api.setPinned(props.post.id, !props.post.pinned)
-    snackbar.show(props.post.pinned ? t('unpinPost') : t('pinnedPost'))
+    await api.setPinned(props.post.id, !pinnedNow.value)
+    snackbar.show(
+      campScope.value
+        ? (pinnedNow.value ? t('campUnpinPost') : t('campPinnedPost'))
+        : (pinnedNow.value ? t('unpinPost') : t('pinnedPost')),
+    )
     emit('changed')
   } catch (e) {
     snackbar.show(String(e))
@@ -112,7 +120,7 @@ const REACTION_EMOJI: Record<string, string> = {
 
 <template>
   <article class="m3-card m3-card--elevated post">
-    <div v-if="post.pinned" class="m3-badge post__pin">📌 {{ t('pinnedPost') }}</div>
+    <div v-if="pinnedNow" class="m3-badge post__pin">📌 {{ campScope ? t('campPinnedPost') : t('pinnedPost') }}</div>
 
     <header class="post__head">
       <AuthorLine :author="post" />

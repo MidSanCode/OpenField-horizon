@@ -75,7 +75,9 @@ async function create() {
     snackbar.show(t('campCreate') + ' ✓')
     void load()
   } catch (e) {
-    snackbar.show(String(e))
+    // Camp names are unique server-side; surface the 409 as a clear hint.
+    const message = String(e)
+    snackbar.show(message.includes('taken') ? t('campNameTaken') : message)
   }
 }
 

@@ -81,6 +81,31 @@ async function leave() {
   }
 }
 
+/** Owner/camp-admins may edit the camp announcement. */
+const canManage = computed(() => {
+  const role = camp.value?.my_role
+  return role === 'owner' || role === 'admin'
+})
+
+const editingAnnouncement = ref(false)
+const announcementDraft = ref('')
+
+function startEditAnnouncement() {
+  announcementDraft.value = camp.value?.announcement ?? ''
+  editingAnnouncement.value = true
+}
+
+async function saveAnnouncement() {
+  if (!camp.value) return
+  try {
+    camp.value = await api.setCampAnnouncement(camp.value.id, announcementDraft.value.trim())
+    editingAnnouncement.value = false
+    snackbar.show(t('saved'))
+  } catch (e) {
+    snackbar.show(String(e))
+  }
+}
+
 onMounted(() => void load())
 </script>
 
@@ -98,8 +123,28 @@ onMounted(() => void load())
           </p>
         </div>
         <div class="head__actions">
+          <button v-if="canManage" class="m3-text-button" @click="startEditAnnouncement">
+            <i class="fa-solid fa-bullhorn" aria-hidden="true"></i> {{ t('campAnnouncement') }}
+          </button>
           <button v-if="!camp.is_member" class="m3-filled-button" @click="join">{{ t('campJoin') }}</button>
           <button v-else-if="camp.creator_id !== auth.user?.id" class="m3-text-button" @click="leave">{{ t('unfollow') }}</button>
+        </div>
+      </div>
+      <p v-if="camp.announcement" class="head__announcement">
+        <i class="fa-solid fa-bullhorn" aria-hidden="true"></i>
+        {{ camp.announcement }}
+      </p>
+    </div>
+
+    <!-- Announcement editor (owner/camp-admins only) -->
+    <div v-if="editingAnnouncement" class="modal-backdrop" @click.self="editingAnnouncement = false">
+      <div class="m3-card m3-card--elevated modal-card">
+        <h2 class="modal-card__title">{{ t('campAnnouncement') }}</h2>
+        <textarea v-model="announcementDraft" class="modal-card__input" rows="4" maxlength="500"
+                  :placeholder="t('campAnnouncementHint')"></textarea>
+        <div class="modal-card__actions">
+          <button class="m3-text-button" @click="editingAnnouncement = false">{{ t('cancel') }}</button>
+          <button class="m3-filled-button" @click="saveAnnouncement">{{ t('save') }}</button>
         </div>
       </div>
     </div>
@@ -149,6 +194,61 @@ onMounted(() => void load())
 .head__actions {
   display: flex;
   align-items: flex-start;
+}
+
+.head__announcement {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: var(--md-radius-md, 12px);
+  background: color-mix(in srgb, var(--md-secondary-container, #e8def8) 55%, transparent);
+  color: var(--md-on-surface);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.head__announcement i {
+  color: var(--md-primary);
+  margin-right: 6px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 16px;
+}
+
+.modal-card {
+  width: min(560px, 100%);
+  padding: 20px;
+}
+
+.modal-card__title {
+  margin: 0 0 12px;
+  font-size: 17px;
+}
+
+.modal-card__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--md-outline-variant, #cac4d0);
+  border-radius: 10px;
+  background: var(--md-surface-container, #fff);
+  color: var(--md-on-surface);
+  font: inherit;
+  resize: vertical;
+}
+
+.modal-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .composer {

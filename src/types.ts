@@ -107,6 +107,8 @@ export interface Camp {
   member_post?: boolean
   /** Whether plain members may pin their own posts in the camp. */
   member_pin?: boolean
+  /** Short notice shown inside the camp; owner/camp-admins only may set it. */
+  announcement?: string
   member_count: number
   post_count: number
   is_member: boolean

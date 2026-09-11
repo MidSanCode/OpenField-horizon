@@ -76,18 +76,21 @@ export const api = {
     request<Reply>(`/posts/${postId}/replies`, { method: 'POST', body: { content } }),
 
   // ---- camps ----
+  // Camp reads carry the token when present (http.ts skips the header for
+  // anonymous visitors): the server personalizes is_member/my_role, and
+  // without it joined camps would forever show a "join" button.
   listCamps: (query = '', mine = false) => {
     const params = new URLSearchParams()
     if (query) params.set('q', query)
     if (mine) params.set('mine', '1')
     const qs = params.toString()
-    return request<{ camps: Camp[] }>(`/camps${qs ? `?${qs}` : ''}`, { auth: false })
+    return request<{ camps: Camp[] }>(`/camps${qs ? `?${qs}` : ''}`)
   },
 
-  getCamp: (id: number | string) => request<Camp>(`/camps/${id}`, { auth: false }),
+  getCamp: (id: number | string) => request<Camp>(`/camps/${id}`),
 
   getCampPosts: (id: number | string) =>
-    request<{ posts: Post[] }>(`/camps/${id}/posts?limit=50`, { auth: false }),
+    request<{ posts: Post[] }>(`/camps/${id}/posts?limit=50`),
 
   createCamp: (name: string, description: string, isVisible: boolean, directJoin: boolean) =>
     request<Camp>('/camps', {
@@ -98,6 +101,9 @@ export const api = {
   joinCamp: (id: number) => request<{ status: string }>(`/camps/${id}/join`, { method: 'POST' }),
 
   leaveCamp: (id: number) => request<void>(`/camps/${id}/members/me`, { method: 'DELETE' }),
+
+  setCampAnnouncement: (id: number, announcement: string) =>
+    request<Camp>(`/camps/${id}/announcement`, { method: 'PUT', body: { announcement } }),
 
   // ---- users ----
   getUser: (id: number | string) => request<ProfileUser>(`/users/${id}`, { auth: false }),

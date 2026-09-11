@@ -118,21 +118,21 @@ onMounted(() => void load())
           :class="{ 'm3-chip--active': extrasTab === 'announcements' }"
           @click="toggleExtras('announcements')"
         >
-          📢 {{ t('groupAnnouncements') }}
+          <i class="fa-solid fa-bullhorn" aria-hidden="true"></i> {{ t('groupAnnouncements') }}
         </button>
         <button
           class="m3-chip m3-chip--selectable"
           :class="{ 'm3-chip--active': extrasTab === 'todos' }"
           @click="toggleExtras('todos')"
         >
-          ✅ {{ t('groupTodos') }}
+          <i class="fa-regular fa-square-check" aria-hidden="true"></i> {{ t('groupTodos') }}
         </button>
         <button
           class="m3-chip m3-chip--selectable"
           :class="{ 'm3-chip--active': extrasTab === 'files' }"
           @click="toggleExtras('files')"
         >
-          📎 {{ t('groupFiles') }}
+          <i class="fa-solid fa-paperclip" aria-hidden="true"></i> {{ t('groupFiles') }}
         </button>
       </template>
     </div>

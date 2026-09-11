@@ -24,10 +24,10 @@ void Promise.all([settings.init(), auth.bootstrap()]).finally(() => {
 
 const isWide = computed(() => window.innerWidth >= 900)
 const navItems = computed(() => [
-  { to: '/', label: t('navHome'), icon: '🏠' },
-  { to: '/camps', label: t('navCamps'), icon: '🏕️' },
-  { to: '/chat', label: t('navChat'), icon: '💬', auth: true },
-  { to: '/settings', label: t('navSettings'), icon: '👤' },
+  { to: '/', label: t('navHome'), icon: 'fa-solid fa-house' },
+  { to: '/camps', label: t('navCamps'), icon: 'fa-solid fa-campground' },
+  { to: '/chat', label: t('navChat'), icon: 'fa-solid fa-comments', auth: true },
+  { to: '/settings', label: t('navSettings'), icon: 'fa-solid fa-user' },
 ])
 
 function isActive(path: string): boolean {
@@ -46,7 +46,7 @@ function isActive(path: string): boolean {
         :title="settings.theme === 'dark' ? t('themeLight') : t('themeDark')"
         @click="settings.setTheme(settings.theme === 'dark' ? 'light' : 'dark')"
       >
-        {{ settings.theme === 'dark' ? '☀️' : '🌙' }}
+        <i :class="settings.theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'" aria-hidden="true"></i>
       </button>
       <template v-if="auth.isAuthenticated">
         <RouterLink to="/compose" class="m3-filled-button topbar__compose">{{ t('createPost') }}</RouterLink>
@@ -65,7 +65,7 @@ function isActive(path: string): boolean {
           class="sidenav__item"
           :class="{ 'sidenav__item--active': isActive(item.to) }"
         >
-          <span class="sidenav__icon">{{ item.icon }}</span>
+          <span class="sidenav__icon"><i :class="item.icon" aria-hidden="true"></i></span>
           <span>{{ item.label }}</span>
         </RouterLink>
         <AppAnnouncementDialog v-if="booted" />
@@ -87,7 +87,7 @@ function isActive(path: string): boolean {
         class="bottombar__item"
         :class="{ 'bottombar__item--active': isActive(item.to) }"
       >
-        <span class="bottombar__icon">{{ item.icon }}</span>
+        <span class="bottombar__icon"><i :class="item.icon" aria-hidden="true"></i></span>
         <span class="bottombar__label">{{ item.label }}</span>
       </RouterLink>
     </nav>

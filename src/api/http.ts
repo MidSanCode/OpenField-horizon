@@ -84,11 +84,18 @@ export async function request<T>(path: string, opts: InternalOptions = {}): Prom
     body = JSON.stringify(opts.body)
   }
 
-  const res = await fetch(readApiBase() + path, {
-    method: opts.method ?? 'GET',
-    headers,
-    body,
-  })
+  let res: Response
+  try {
+    res = await fetch(readApiBase() + path, {
+      method: opts.method ?? 'GET',
+      headers,
+      body,
+    })
+  } catch (e) {
+    // fetch only throws TypeErrors on network failures (DNS, refused
+    // connection, CORS) — surface them as a stable offline error.
+    throw new ApiError(0, 'gateway unreachable')
+  }
 
   if (res.status === 401 && opts.auth !== false && readRefreshToken() && !opts._retried) {
     const refreshed = await tryRefresh()
@@ -132,6 +139,9 @@ async function tryRefresh(): Promise<boolean> {
 
 /** Extracts the server's `{"error": "..."}` message, with sane fallbacks. */
 async function extractError(res: Response): Promise<string> {
+  // The vite dev proxy answers 503 with this exact body when the gateway
+  // behind it is down; keep the message stable for the UI.
+  if (res.status === 503) return 'gateway unreachable'
   try {
     const data = (await res.json()) as { error?: string }
     if (data.error) return data.error

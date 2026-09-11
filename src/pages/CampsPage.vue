@@ -102,7 +102,7 @@ onMounted(() => void load())
           <h2 class="camp__name">
             <RouterLink :to="`/camps/${c.id}`">{{ c.name }}</RouterLink>
           </h2>
-          <span v-if="!c.is_visible" class="m3-chip">🔒</span>
+          <span v-if="!c.is_visible" class="m3-chip"><i class="fa-solid fa-lock" aria-hidden="true"></i></span>
         </div>
         <p class="camp__desc">{{ c.description || '—' }}</p>
         <div class="camp__foot">

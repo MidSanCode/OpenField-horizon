@@ -59,7 +59,7 @@ async function submit() {
 <template>
   <div class="page">
     <h1 class="page-title">{{ t('postComposerTitle') }}</h1>
-    <p v-if="campName" class="m3-chip">🏕️ {{ campName }}</p>
+    <p v-if="campName" class="m3-chip"><i class="fa-solid fa-campground" aria-hidden="true"></i> {{ campName }}</p>
 
     <textarea
       v-model="content"

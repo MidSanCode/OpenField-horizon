@@ -51,7 +51,7 @@ function timeLabel(iso?: string): string {
     <h1 class="page-title">{{ t('navChat') }}</h1>
 
     <RouterLink v-for="c in conversations" :key="c.id" :to="`/chat/${c.id}`" class="m3-card m3-card--elevated conv">
-      <span class="conv__avatar">{{ c.type === 'group' ? '👥' : '👤' }}</span>
+      <span class="conv__avatar"><i :class="c.type === 'group' ? 'fa-solid fa-user-group' : 'fa-solid fa-user'" aria-hidden="true"></i></span>
       <span class="conv__main">
         <span class="conv__title">
           {{ c.title || (c.type === 'group' ? `Group #${c.id}` : `Chat #${c.id}`) }}

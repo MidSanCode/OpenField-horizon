@@ -93,7 +93,7 @@ onMounted(() => void load())
           <p class="head__desc">{{ camp.description || '—' }}</p>
           <p class="m3-label-small">
             {{ camp.member_count }} {{ t('campMembers') }} · {{ camp.post_count }} {{ t('campPosts') }}
-            <span v-if="!camp.is_visible"> · 🔒</span>
+            <span v-if="!camp.is_visible"> · <i class="fa-solid fa-lock" aria-hidden="true"></i></span>
             <span v-if="!camp.direct_join"> · {{ t('campInviteOnly') }}</span>
           </p>
         </div>
@@ -107,7 +107,9 @@ onMounted(() => void load())
     <p v-if="failed" class="empty">{{ t('loadFailed') }}</p>
 
     <div v-else-if="membersOnly" class="m3-card locked">
-      <p class="locked__title">🔒 {{ t('campMembersOnly') }}</p>
+      <p class="locked__title">
+        <i class="fa-solid fa-lock" aria-hidden="true"></i> {{ t('campMembersOnly') }}
+      </p>
       <button v-if="camp && !camp.is_member" class="m3-filled-button" @click="join">
         {{ t('campJoin') }}
       </button>

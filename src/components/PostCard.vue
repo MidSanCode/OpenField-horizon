@@ -107,20 +107,24 @@ async function remove() {
 }
 
 const REACTIONS = ['like', 'love', 'haha', 'wow', 'sad']
-const REACTION_EMOJI: Record<string, string> = {
-  like: '👍',
-  dislike: '👎',
-  love: '❤️',
-  haha: '😂',
-  wow: '😮',
-  sad: '😢',
-  angry: '😠',
+/** Font Awesome icon classes per reaction type. */
+const REACTION_ICONS: Record<string, string> = {
+  like: 'fa-solid fa-thumbs-up',
+  dislike: 'fa-regular fa-thumbs-down',
+  love: 'fa-solid fa-heart',
+  haha: 'fa-solid fa-face-laugh-squint',
+  wow: 'fa-solid fa-face-surprise',
+  sad: 'fa-solid fa-face-sad-tear',
+  angry: 'fa-solid fa-face-angry',
 }
 </script>
 
 <template>
   <article class="m3-card m3-card--elevated post">
-    <div v-if="pinnedNow" class="m3-badge post__pin">📌 {{ campScope ? t('campPinnedPost') : t('pinnedPost') }}</div>
+    <div v-if="pinnedNow" class="m3-badge post__pin">
+      <i class="fa-solid fa-thumbtack" aria-hidden="true"></i>
+      {{ campScope ? t('campPinnedPost') : t('pinnedPost') }}
+    </div>
 
     <header class="post__head">
       <AuthorLine :author="post" />
@@ -140,18 +144,25 @@ const REACTION_EMOJI: Record<string, string> = {
           :class="{ 'm3-chip--active': post.my_reaction === r }"
           @click="react(r)"
         >
-          {{ REACTION_EMOJI[r] }}<span v-if="(post.reactions?.[r] ?? 0) > 0">{{ post.reactions[r] }}</span>
+          <i :class="REACTION_ICONS[r]" aria-hidden="true"></i><span v-if="(post.reactions?.[r] ?? 0) > 0">{{ post.reactions[r] }}</span>
         </button>
         <span v-if="reactionTotal === 0" class="m3-label-small">—</span>
       </div>
       <div class="post__meta">
         <button class="m3-text-button" @click="toggleFavorite">
-          {{ post.is_favorite ? '★' : '☆' }} {{ post.favorite_count }}
+          <i :class="post.is_favorite ? 'fa-solid fa-star' : 'fa-regular fa-star'" aria-hidden="true"></i>
+          {{ post.favorite_count }}
         </button>
-        <RouterLink :to="`/posts/${post.id}`" class="m3-text-button">💬 {{ post.reply_count }}</RouterLink>
+        <RouterLink :to="`/posts/${post.id}`" class="m3-text-button">
+          <i class="fa-regular fa-comment" aria-hidden="true"></i> {{ post.reply_count }}
+        </RouterLink>
         <template v-if="isMine">
-          <button class="m3-text-button" @click="togglePinned">📌</button>
-          <button class="m3-text-button m3-text-button--danger" @click="remove">🗑</button>
+          <button class="m3-text-button" @click="togglePinned" :title="pinnedNow ? t('unpinPost') : t('pinPost')">
+            <i :class="pinnedNow ? 'fa-solid fa-thumbtack' : 'fa-regular fa-thumbtack'" aria-hidden="true"></i>
+          </button>
+          <button class="m3-text-button m3-text-button--danger" @click="remove">
+            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+          </button>
         </template>
       </div>
     </footer>

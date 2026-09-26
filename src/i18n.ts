@@ -73,7 +73,8 @@ const messages: Record<Locale, Record<string, string>> = {
     myProfile: '我的主页',
     settings: '设置',
     settingsApiBase: 'API 地址',
-    settingsApiBaseHint: '默认指向官方网关；自建服务请改成你的网关地址',
+    settingsApiBaseHint:
+      '默认指向官方网关；自建服务填网关地址即可（如 http://127.0.0.1:8080），会自动补上 /api/v1 前缀',
     settingsTheme: '主题',
     themeSystem: '跟随系统',
     themeLight: '浅色',
@@ -158,7 +159,8 @@ const messages: Record<Locale, Record<string, string>> = {
     myProfile: 'My profile',
     settings: 'Settings',
     settingsApiBase: 'API base URL',
-    settingsApiBaseHint: 'Defaults to the official gateway; point it at your own gateway to self-host',
+    settingsApiBaseHint:
+      'Defaults to the official gateway; to self-host, enter your gateway address (e.g. http://127.0.0.1:8080) and the /api/v1 prefix is added automatically',
     settingsTheme: 'Theme',
     themeSystem: 'System',
     themeLight: 'Light',

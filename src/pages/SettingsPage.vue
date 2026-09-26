@@ -21,7 +21,10 @@ const settings = useSettingsStore()
 const apiBase = ref(readApiBase())
 
 function applyApiBase() {
-  writeApiBase(apiBase.value)
+  // writeApiBase normalises the entry (a bare gateway address gains the
+  // "/api/v1" prefix) and reports what is now in effect; show that before the
+  // reload so the resolved value is visible rather than surprising.
+  apiBase.value = writeApiBase(apiBase.value)
   window.location.reload()
 }
 

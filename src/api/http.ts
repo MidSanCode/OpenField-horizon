@@ -5,13 +5,22 @@
  * under stable keys; the auth store mirrors them into reactive state.
  */
 
+import { API_PATH_PREFIX, normalizeApiBase } from './apiBase'
+
 const ACCESS_KEY = 'horizon.access'
 const REFRESH_KEY = 'horizon.refresh'
 const API_BASE_KEY = 'horizon.apiBase'
 
 /** Default API base for production builds; dev defaults to the Vite proxy. */
 export const DEFAULT_API_BASE =
-  import.meta.env.DEV ? '/api/v1' : 'https://api.openfield.eu.cc/api/v1'
+  import.meta.env.DEV
+    ? API_PATH_PREFIX
+    : 'https://api.openfield.eu.cc' + API_PATH_PREFIX
+
+/** The page protocol, or a conservative default outside a browser. */
+function pageProtocol(): string {
+  return typeof window === 'undefined' ? 'https:' : window.location.protocol
+}
 
 /** Thrown for every non-2xx response; carries the HTTP status. */
 export class ApiError extends Error {
@@ -37,17 +46,31 @@ export function writeTokens(access: string | null, refresh: string | null): void
   else localStorage.removeItem(REFRESH_KEY)
 }
 
+/**
+ * The API base in effect: the stored override (normalised, so entries saved
+ * before normalisation existed — a bare gateway address — start working
+ * without the user re-saving) or the build default.
+ */
 export function readApiBase(): string {
-  return localStorage.getItem(API_BASE_KEY) || DEFAULT_API_BASE
+  const stored = localStorage.getItem(API_BASE_KEY)
+  if (!stored) return DEFAULT_API_BASE
+  return normalizeApiBase(stored, pageProtocol()) || DEFAULT_API_BASE
 }
 
-export function writeApiBase(base: string): void {
-  const trimmed = base.trim().replace(/\/+$/, '')
-  if (!trimmed || trimmed === DEFAULT_API_BASE) {
+/**
+ * Persists an API base override after normalising it, so a bare gateway
+ * address gains the `/api/v1` prefix the API paths need. An empty value, or one
+ * that resolves to the build default, clears the override. Returns the base now
+ * in effect.
+ */
+export function writeApiBase(base: string): string {
+  const normalized = normalizeApiBase(base, pageProtocol())
+  if (!normalized || normalized === normalizeApiBase(DEFAULT_API_BASE, pageProtocol())) {
     localStorage.removeItem(API_BASE_KEY)
-  } else {
-    localStorage.setItem(API_BASE_KEY, trimmed)
+    return DEFAULT_API_BASE
   }
+  localStorage.setItem(API_BASE_KEY, normalized)
+  return normalized
 }
 
 interface RequestOptions {

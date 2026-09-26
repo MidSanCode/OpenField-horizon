@@ -43,6 +43,21 @@ The API base defaults to `/api/v1` in dev (via the Vite proxy) and the
 official gateway in release builds; users can override it at runtime in
 **设置 → API 地址** (self-hosting).
 
+The override is **normalised** (`src/api/apiBase.ts`): you can paste the bare
+gateway address (`http://127.0.0.1:8080`) and the `/api/v1` prefix every API
+path is relative to is appended automatically, a missing scheme is filled in
+(`http` for loopback, otherwise the page's protocol), and trailing slashes /
+query strings are dropped. An entry that already carries a path — the dev
+default `/api/v1`, or a custom mount such as `https://host/openfield/api/v1` —
+is respected as typed. Values saved before normalisation existed are normalised
+on read, so they start working without being re-saved.
+
+```pwsh
+npm run check:api-base   # exercises the normalisation rules (no framework needed)
+npm run typecheck        # vue-tsc --noEmit
+npm run build            # dist/ static output
+```
+
 ## Feature coverage vs. the Flutter client
 
 | Feature                         | Horizon                                                        |
@@ -68,7 +83,8 @@ official gateway in release builds; users can override it at runtime in
 
 ```
 src/
-  api/        http.ts (fetch + auth + refresh), index.ts (typed endpoints)
+  api/        http.ts (fetch + auth + refresh), index.ts (typed endpoints),
+              apiBase.ts (self-host API base normalisation)
   components/ PostCard, AuthorLine, AttachmentGrid, AppAnnouncementDialog
   composables/seo.ts
   pages/      Home, Post, Camps, Camp, User, Login, Composer, Settings,

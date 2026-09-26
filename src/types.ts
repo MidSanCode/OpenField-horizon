@@ -220,3 +220,27 @@ export interface AppAnnouncement {
   active: boolean
   created_at: string
 }
+
+/** One OpenField account bound to an OAuth identity. */
+export interface OAuthPickAccount {
+  id: number
+  username: string
+  nickname?: string
+  avatar_url?: string
+  email?: string
+  created_at?: string
+}
+
+/**
+ * Payload of `GET /auth/oidc/pick`: the OAuth identity that just authorized
+ * plus every account already bound to it, so the user can choose which one to
+ * sign in as (or add a new one while under [max_accounts]).
+ */
+export interface OAuthPickInfo {
+  provider: string
+  oauth2_username?: string
+  email?: string
+  avatar_url?: string
+  max_accounts: number
+  accounts: OAuthPickAccount[]
+}

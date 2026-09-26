@@ -14,6 +14,10 @@ const routes: RouteRecordRaw[] = [
   { path: '/u/:id', name: 'user', component: () => import('@/pages/UserPage.vue'), meta: { title: '用户 · 地平线 Horizon' } },
   { path: '/announcements', name: 'announcements', component: () => import('@/pages/AnnouncementsPage.vue'), meta: { title: '公告 · 地平线 Horizon' } },
   { path: '/login', name: 'login', component: () => import('@/pages/LoginPage.vue'), meta: { title: '登录 · 地平线 Horizon', noindex: true } },
+  // OAuth landing route: the server redirects here with tokens (or a pick
+  // ticket) in the query string, so it must stay public and must never be
+  // cached by a crawler or an intermediary.
+  { path: '/oauth/callback', name: 'oauth-callback', component: () => import('@/pages/OAuthCallbackPage.vue'), meta: { title: '登录中 · 地平线 Horizon', noindex: true } },
   { path: '/compose', name: 'compose', component: () => import('@/pages/ComposerPage.vue'), meta: { title: '发帖 · 地平线 Horizon', noindex: true, requiresAuth: true } },
   { path: '/chat', name: 'chat', component: () => import('@/pages/ChatPage.vue'), meta: { title: '聊天 · 地平线 Horizon', noindex: true, requiresAuth: true } },
   { path: '/chat/:id', name: 'conversation', component: () => import('@/pages/ConversationPage.vue'), meta: { title: '会话 · 地平线 Horizon', noindex: true, requiresAuth: true } },

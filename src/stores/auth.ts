@@ -27,6 +27,18 @@ export const useAuthStore = defineStore('auth', {
       this.user = result.user as AuthUser
       await this.fetchMe()
     },
+    /**
+     * Applies a bare token pair, as handed back by the OAuth redirect, which
+     * carries the tokens in the query string rather than a login payload. The
+     * profile is fetched rather than taken from the URL, so it is never stale
+     * and no profile data has to travel through the address bar.
+     */
+    async applyTokens(accessToken: string, refreshToken: string | null) {
+      writeTokens(accessToken, refreshToken)
+      this.token = accessToken
+      this.refreshToken = refreshToken
+      await this.fetchMe()
+    },
     async fetchMe() {
       if (!this.token) return
       try {

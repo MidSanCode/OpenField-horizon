@@ -12,6 +12,7 @@ import type {
   GroupAnnouncement,
   GroupFile,
   GroupTodo,
+  OAuthPickInfo,
   Post,
   ProfileUser,
   Reply,
@@ -28,10 +29,47 @@ export interface LoginResult {
   user: ProfileUser
 }
 
+/**
+ * How the OIDC callback should finish. `web` makes the server bounce back to
+ * the browser client (`oidc.web_redirect_url`) instead of firing the
+ * `openfield://` deep link, which browsers refuse to open silently.
+ */
+export type OAuthFlow = 'web' | 'app'
+
 export const api = {
   // ---- auth ----
   login: (username: string, password: string) =>
     request<LoginResult>('/auth/login', { method: 'POST', body: { username, password }, auth: false }),
+
+  /** Advertised sign-in methods: `["oidc", "password"]`. */
+  providers: () => request<{ providers: string[] }>('/auth/providers', { auth: false }),
+
+  /** Starts an OIDC login; the caller redirects the browser to `auth_url`. */
+  oidcLogin: (flow: OAuthFlow = 'web') =>
+    request<{ auth_url: string; provider: string; flow: string }>(
+      `/auth/oidc/login?flow=${flow}`,
+      { auth: false },
+    ),
+
+  /** Lists the accounts bound to a pick ticket (does not consume it). */
+  oidcPick: (ticket: string) =>
+    request<OAuthPickInfo>(`/auth/oidc/pick?ticket=${encodeURIComponent(ticket)}`, { auth: false }),
+
+  /** Signs in as one of the accounts bound to the ticket (consumes it). */
+  oidcPickSelect: (ticket: string, userId: number) =>
+    request<LoginResult>('/auth/oidc/pick/select', {
+      method: 'POST',
+      body: { ticket, user_id: userId },
+      auth: false,
+    }),
+
+  /** Provisions and signs into a new account for the ticket (consumes it). */
+  oidcPickCreate: (ticket: string) =>
+    request<LoginResult>('/auth/oidc/pick/create', {
+      method: 'POST',
+      body: { ticket },
+      auth: false,
+    }),
 
   refresh: (refreshToken: string) =>
     request<LoginResult>('/auth/refresh', { method: 'POST', body: { refresh_token: refreshToken }, auth: false }),

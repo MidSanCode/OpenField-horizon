@@ -2,11 +2,17 @@
 /**
  * Attachment grid for a post: image attachments render as a tiled gallery
  * (preview-quality srcs) with lazy loading; non-image files render as chips.
+ * An attachment whose preview fails to load is swapped for a placeholder, so a
+ * dead object-storage URL does not leave a broken-image glyph in the tile.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { attachmentDisplayUrl, isImageAttachment, type Attachment } from '@/types'
+import { useImagePlaceholder } from '@/composables/imageFallback'
 
 const props = defineProps<{ attachments: Attachment[] }>()
+
+const gridEl = ref<HTMLElement | null>(null)
+useImagePlaceholder(gridEl)
 
 const images = computed(() => props.attachments.filter(isImageAttachment))
 const files = computed(() => props.attachments.filter((a) => !isImageAttachment(a)))
@@ -19,7 +25,7 @@ function formatSize(bytes: number): string {
 </script>
 
 <template>
-  <div v-if="images.length" class="grid" :class="`grid--${Math.min(images.length, 4)}`">
+  <div v-if="images.length" ref="gridEl" class="grid" :class="`grid--${Math.min(images.length, 4)}`">
     <a
       v-for="att in images"
       :key="att.id"

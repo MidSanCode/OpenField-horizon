@@ -10,6 +10,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useSnackbarStore } from '@/stores/snackbar'
 import { t } from '@/i18n'
 import { useSeo, watchSeo } from '@/composables/seo'
+import { markdownToPlainText, renderMarkdown } from '@/utils/markdown'
+import { useImagePlaceholder } from '@/composables/imageFallback'
 import type { Post, Reply } from '@/types'
 import PostCard from '@/components/PostCard.vue'
 import AuthorLine from '@/components/AuthorLine.vue'
@@ -28,12 +30,19 @@ const sending = ref(false)
 
 const postId = computed(() => route.params.id as string)
 
+// Reply bodies are markdown (v-html), so their images need the delegated
+// placeholder handler; one listener on the section covers every reply.
+const repliesEl = ref<HTMLElement | null>(null)
+useImagePlaceholder(repliesEl)
+
 useSeo({ title: '帖子 · 地平线 Horizon' })
 watchSeo(() =>
   post.value
     ? {
         title: `${post.value.nickname || post.value.username || 'User'} 的帖子 · 地平线 Horizon`,
-        description: post.value.content.slice(0, 120),
+        // Strip markdown syntax: the raw source would leak "#" and "**" into
+        // the meta description, which is what search results show.
+        description: markdownToPlainText(post.value.content).slice(0, 120),
       }
     : null,
 )
@@ -84,7 +93,7 @@ onMounted(() => void load())
     <template v-if="post">
       <PostCard :post="post" @changed="load" />
 
-      <section aria-label="回复" class="replies">
+      <section ref="repliesEl" aria-label="回复" class="replies">
         <h2 class="replies__title">{{ t('reply') }} · {{ post.reply_count }}</h2>
 
         <div v-for="r in replies" :key="r.id" class="m3-card reply">
@@ -93,9 +102,11 @@ onMounted(() => void load())
             <span class="m3-label-small">{{ new Date(r.created_at).toLocaleString() }}</span>
           </header>
           <div v-if="r.reply_to_name" class="reply__quote m3-label-small">
-            ↩ @{{ r.reply_to_name }}: {{ (r.reply_to_content ?? '').slice(0, 80) }}
+            ↩ @{{ r.reply_to_name }}: {{ markdownToPlainText(r.reply_to_content ?? '').slice(0, 80) }}
           </div>
-          <p class="reply__body">{{ r.content }}</p>
+          <!-- Replies are markdown in the app too (MarkdownContent in
+               reply_tile.dart), so render them the same way here. -->
+          <div class="reply__body md-body" v-html="renderMarkdown(r.content)" />
         </div>
 
         <p v-if="replies.length === 0" class="m3-label-small" style="text-align:center">—</p>
@@ -147,8 +158,26 @@ onMounted(() => void load())
 
 .reply__body {
   margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+}
+
+.reply__body :deep(pre) {
+  background: var(--md-surface-container-high);
+  border-radius: var(--md-radius-sm);
+  padding: 12px;
+  overflow-x: auto;
+  font-size: 13px;
+}
+
+.reply__body :deep(code) {
+  font-family: 'Cascadia Code', Consolas, monospace;
+  background: var(--md-surface-container-high);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.reply__body :deep(pre code) {
+  background: none;
+  padding: 0;
 }
 
 .reply-composer__actions {

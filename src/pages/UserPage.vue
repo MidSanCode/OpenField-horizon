@@ -11,6 +11,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useSnackbarStore } from '@/stores/snackbar'
 import { t } from '@/i18n'
 import { useSeo, watchSeo } from '@/composables/seo'
+import { markdownToPlainText } from '@/utils/markdown'
+import { useImageFallback } from '@/composables/imageFallback'
 import type { Post, ProfileUser } from '@/types'
 import PostCard from '@/components/PostCard.vue'
 
@@ -26,12 +28,18 @@ const failed = ref(false)
 const userId = computed(() => route.params.id as string)
 const isSelf = computed(() => auth.user?.id?.toString() === userId.value)
 
+// A 404'd avatar falls back to the initial, like a missing one.
+const avatarSrc = computed(() => user.value?.avatar_url)
+const { failed: avatarFailed, onError: onAvatarError } = useImageFallback(avatarSrc)
+
 useSeo({ title: '用户 · 地平线 Horizon' })
 watchSeo(() =>
   user.value
     ? {
         title: `${user.value.nickname || user.value.username} · 地平线 Horizon`,
-        description: user.value.bio ?? undefined,
+        // The bio is markdown in the app; strip the syntax rather than leak
+        // "#"/"**" into the meta description.
+        description: user.value.bio ? markdownToPlainText(user.value.bio) : undefined,
       }
     : null,
 )
@@ -76,7 +84,13 @@ onMounted(() => void load())
     <div v-if="user" class="m3-card head">
       <div class="head__banner" :style="user.banner_url ? { background: `url(${user.banner_url}) center/cover` } : {}" />
       <div class="head__row">
-        <img v-if="user.avatar_url" class="head__avatar" :src="user.avatar_url" alt="" />
+        <img
+          v-if="avatarSrc && !avatarFailed"
+          class="head__avatar"
+          :src="avatarSrc"
+          alt=""
+          @error="onAvatarError"
+        />
         <span v-else class="head__avatar head__avatar--fallback">{{ (user.nickname || user.username).slice(0, 1) }}</span>
         <div class="head__names">
           <h1 class="head__name">

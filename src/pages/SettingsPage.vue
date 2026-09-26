@@ -4,13 +4,14 @@
  * and logout. The API base writes through the http layer's localStorage keys
  * and reloads the app so every in-flight handle picks it up.
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
 import { readApiBase, writeApiBase } from '@/api/http'
 import { t } from '@/i18n'
 import { useSeo } from '@/composables/seo'
+import { useImageFallback } from '@/composables/imageFallback'
 
 useSeo({ title: '设置 · 地平线 Horizon' })
 
@@ -19,6 +20,13 @@ const auth = useAuthStore()
 const settings = useSettingsStore()
 
 const apiBase = ref(readApiBase())
+
+// Own avatar: an initial stands in when it is missing or fails to load.
+const avatarSrc = computed(() => auth.user?.avatar_url)
+const { failed: avatarFailed, onError: onAvatarError } = useImageFallback(avatarSrc)
+const initial = computed(() =>
+  (auth.user?.nickname || auth.user?.username || '?').slice(0, 1).toUpperCase(),
+)
 
 function applyApiBase() {
   // writeApiBase normalises the entry (a bare gateway address gains the
@@ -39,7 +47,14 @@ function logout() {
     <h1 class="page-title">{{ t('settings') }}</h1>
 
     <div v-if="auth.isAuthenticated && auth.user" class="m3-card m3-card--elevated account">
-      <img v-if="auth.user.avatar_url" class="account__avatar" :src="auth.user.avatar_url" alt="" />
+      <img
+        v-if="avatarSrc && !avatarFailed"
+        class="account__avatar"
+        :src="avatarSrc"
+        alt=""
+        @error="onAvatarError"
+      />
+      <span v-else class="account__avatar account__avatar--fallback">{{ initial }}</span>
       <div class="account__names">
         <strong>{{ auth.user.nickname || auth.user.username }}</strong>
         <span class="m3-label-small">@{{ auth.user.username }}</span>
@@ -113,6 +128,17 @@ function logout() {
   height: 46px;
   border-radius: 50%;
   object-fit: cover;
+  flex: none;
+}
+
+.account__avatar--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font-weight: 700;
+  font-size: 18px;
 }
 
 .account__names {

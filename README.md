@@ -10,6 +10,7 @@ from any browser, with crawlable public content.
 |--------------|-------------------------------------------------------------------|
 | Framework    | Vue 3 (`<script setup>` SFC, TypeScript)                          |
 | Routing      | vue-router 4 (history mode, per-route meta + title + robots meta) |
+| Markdown     | markdown-it with `html: false` (GFM parity with `flutter_markdown`) |
 | State        | Pinia (`auth`, `settings`, `snackbar` stores)                     |
 | UI           | Hand-rolled **Material 3** token system (`src/styles/m3.css`) — M3 baseline palette, elevation, shape radius, dark scheme via `data-theme` |
 | Build        | Vite 6, dev proxy `/api → 127.0.0.1:8080`                         |
@@ -53,10 +54,12 @@ is respected as typed. Values saved before normalisation existed are normalised
 on read, so they start working without being re-saved.
 
 ```pwsh
-npm run check            # all three check scripts below
+npm run check            # all five check scripts below
 npm run check:api-base   # exercises the normalisation rules (no framework needed)
 npm run check:e2ee       # E2EE envelope detection
 npm run check:oauth      # OAuth redirect safety (open-redirect guard)
+npm run check:markdown   # markdown rendering + its XSS/URL guards
+npm run check:images     # image placeholder safety + fallback reset
 npm run typecheck        # vue-tsc --noEmit
 npm run build            # dist/ static output
 ```
@@ -97,13 +100,52 @@ Two deployment requirements that follow from that:
 - the gateway must accept this app's origin in `server.allowed_origins` when the
   two are on different hosts.
 
+## Rendering user content
+
+Post bodies and replies are rendered with **markdown-it**, configured to match
+the Flutter client, which uses `flutter_markdown` with its default
+GitHub-flavored extension set:
+
+| Option       | Value  | Why                                                       |
+|--------------|--------|-----------------------------------------------------------|
+| `html`       | `false`| Raw HTML in the source is escaped, never emitted — the renderer cannot produce attacker-supplied tags, so no sanitizer is needed. |
+| `linkify`    | `true` | Bare URLs become links, as GFM does.                      |
+| `breaks`     | `true` | A single newline is a line break (the app does the same).  |
+
+Links open in a new tab with `rel="noopener noreferrer"`; `validateLink` keeps
+`javascript:`/`vbscript:`/`file:`/non-image `data:` URLs out of `href`.
+`audit_markdown.ts` pins both the rendering and those guards.
+
+Two structural rules the markup depends on:
+
+- **Markdown output is never nested inside an anchor.** It is block-level and
+  may contain its own links; an `<a>` inside the card's `<a>` triggers the HTML
+  parser's adoption agency algorithm, which duplicates the outer anchor and
+  hoists the paragraph out of the card. The feed card therefore puts its
+  permalink on the timestamp and uses a *stretched link*
+  (`.post__time::after`) to keep the whole card clickable.
+- **Markdown containers must not set `white-space: pre-wrap`.** The renderer
+  emits real newlines between block tags, which `pre-wrap` would turn into
+  visible blank lines. The shared typography lives in `.md-body` (`m3.css`).
+
+Images that fail to load are replaced with a placeholder rather than leaving
+the browser's broken-image glyph:
+
+- avatars (`AuthorLine`, `SettingsPage`, `UserPage`, `OAuthCallbackPage`) fall
+  back to the author's initial — the same placeholder a *missing* URL already
+  used — via `useImageFallback`, which resets when the URL changes so a reused
+  component does not stay stuck;
+- attachments and images inside rendered markdown get the shared data-URI
+  placeholder via `useImagePlaceholder`, one delegated capture-phase `error`
+  listener per container (Vue cannot attach listeners inside `v-html`).
+
 ## Feature coverage vs. the Flutter client
 
 | Feature                         | Horizon                                                        |
 |---------------------------------|----------------------------------------------------------------|
 | Password login / token refresh  | ✅ (rotating refresh, single replay on 401)                     |
 | OAuth (OIDC) login              | ✅ web flow + multi-account picker (needs `oidc.web_redirect_url`) |
-| Feed, post detail, replies      | ✅ (public + crawlable)                                         |
+| Feed, post detail, replies      | ✅ (public + crawlable; markdown in posts and replies)          |
 | Reactions / favorites           | ✅                                                              |
 | Pin / unpin own posts           | ✅                                                              |
 | Delete own post                 | ✅                                                              |
@@ -115,6 +157,7 @@ Two deployment requirements that follow from that:
 | Chat (list + plain conversations)| ✅ read/send, group extras read (announcements/todos/files)     |
 | E2E-encrypted conversations     | ⚠️ no key store: encrypted messages render as a locked placeholder, never as ciphertext |
 | Image/attachment upload         | ❌ composer is text-only for now                                 |
+| Broken image fallback           | ✅ initial for avatars, placeholder for attachments/markdown      |
 | Wallet / membership / exp       | ❌ app-first surfaces                                            |
 | QR login & share codes          | ❌ app-first surface                                             |
 | Realtime WS events              | ❌ polling only (send refreshes the thread)                      |

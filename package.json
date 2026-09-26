@@ -8,14 +8,17 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "npm run check:api-base && npm run check:e2ee && npm run check:oauth",
+    "check": "npm run check:api-base && npm run check:e2ee && npm run check:oauth && npm run check:markdown && npm run check:images",
     "check:api-base": "node --experimental-strip-types audit_api_base.ts",
     "check:e2ee": "node --experimental-strip-types audit_e2ee.ts",
     "check:oauth": "node --experimental-strip-types audit_oauth.ts",
+    "check:markdown": "node --experimental-strip-types audit_markdown.ts",
+    "check:images": "node --import ./audit_alias_hooks.mjs --experimental-strip-types audit_image_fallback.ts",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.1",
+    "markdown-it": "^15.0.2",
     "pinia": "^2.3.0",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"

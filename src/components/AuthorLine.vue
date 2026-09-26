@@ -5,6 +5,7 @@
  */
 import { computed } from 'vue'
 import { authorName, type AuthorFields } from '@/types'
+import { useImageFallback } from '@/composables/imageFallback'
 
 const props = defineProps<{
   author: AuthorFields
@@ -21,11 +22,23 @@ const memberBadge = computed(() =>
     ? `Lv.${props.author.member_level}`
     : null,
 )
+
+// An avatar that 404s falls back to the same initial as a missing one, rather
+// than leaving the browser's broken-image glyph in the byline.
+const avatarSrc = computed(() => props.author.avatar_url)
+const { failed: avatarFailed, onError: onAvatarError } = useImageFallback(avatarSrc)
 </script>
 
 <template>
   <span class="author">
-    <img v-if="author.avatar_url" class="author__avatar" :src="author.avatar_url" alt="" loading="lazy" />
+    <img
+      v-if="avatarSrc && !avatarFailed"
+      class="author__avatar"
+      :src="avatarSrc"
+      alt=""
+      loading="lazy"
+      @error="onAvatarError"
+    />
     <span v-else class="author__avatar author__avatar--fallback">{{ name.slice(0, 1) }}</span>
     <span class="author__names">
       <RouterLink v-if="link && profileHref" :to="profileHref" class="author__name">{{ name }}</RouterLink>

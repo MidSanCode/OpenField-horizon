@@ -11,6 +11,7 @@ import { api } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { useSnackbarStore } from '@/stores/snackbar'
 import { renderMarkdown } from '@/utils/markdown'
+import { useImagePlaceholder } from '@/composables/imageFallback'
 import { t } from '@/i18n'
 import type { Post } from '@/types'
 import AuthorLine from './AuthorLine.vue'
@@ -26,6 +27,11 @@ const snackbar = useSnackbarStore()
 const busy = ref(false)
 
 const html = computed(() => renderMarkdown(props.post.content))
+
+// Markdown images come from v-html, where Vue cannot attach a listener; one
+// delegated handler on the container swaps in the placeholder on failure.
+const contentEl = ref<HTMLElement | null>(null)
+useImagePlaceholder(contentEl)
 const isMine = computed(() => auth.user?.id === props.post.user_id)
 const reactionTotal = computed(() =>
   Object.values(props.post.reactions ?? {}).reduce((sum, n) => sum + n, 0),
@@ -128,10 +134,22 @@ const REACTION_ICONS: Record<string, string> = {
 
     <header class="post__head">
       <AuthorLine :author="post" />
-      <span class="m3-label-small">{{ timeAgo(post.created_at) }}</span>
+      <!-- The permalink sits on the timestamp rather than wrapping the body.
+           Markdown output is block-level (headings, lists, tables) and can
+           contain its own links, and an <a> inside the card's <a> makes the
+           HTML parser run the adoption agency algorithm: it duplicates this
+           anchor and hoists the markdown paragraph out of the card. A
+           stretched link (see .post__time::after) keeps the whole card
+           clickable without that. No aria-label: it would replace the visible
+           timestamp as the accessible name. -->
+      <RouterLink
+        :to="`/posts/${post.id}`"
+        class="m3-label-small post__time"
+        :title="t('viewPost')"
+      >{{ timeAgo(post.created_at) }}</RouterLink>
     </header>
 
-    <RouterLink :to="`/posts/${post.id}`" class="post__content" v-html="html" />
+    <div ref="contentEl" class="post__content md-body" v-html="html" />
 
     <AttachmentGrid :attachments="post.attachments ?? []" />
 
@@ -170,6 +188,10 @@ const REACTION_ICONS: Record<string, string> = {
 </template>
 
 <style scoped>
+.post {
+  position: relative;
+}
+
 .post__pin {
   margin-bottom: 8px;
 }
@@ -182,26 +204,50 @@ const REACTION_ICONS: Record<string, string> = {
   margin-bottom: 10px;
 }
 
+/**
+ * Stretched link: the timestamp is the card's permalink and its ::after covers
+ * the card, so clicking anywhere still opens the post. Anything genuinely
+ * interactive is lifted above the overlay below, otherwise it would be
+ * unreachable — but the permalink itself must stay unpositioned, because a
+ * positioned anchor would become the containing block for its own ::after and
+ * collapse the overlay down to the timestamp.
+ */
+.post__time {
+  color: var(--md-on-surface-variant);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.post__time:hover {
+  text-decoration: underline;
+}
+
+.post__time::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.post :deep(a):not(.post__time),
+.post :deep(button) {
+  position: relative;
+  z-index: 1;
+}
+
 .post__content {
   display: block;
   color: var(--md-on-surface);
   text-decoration: none;
-  overflow-wrap: anywhere;
 }
 
-.post__content:hover {
-  text-decoration: none;
-}
-
-.post__content :deep(p) {
-  margin: 0 0 8px;
-}
-
-.post__content :deep(blockquote) {
-  margin: 8px 0;
-  padding: 4px 14px;
-  border-left: 3px solid var(--md-outline-variant);
-  color: var(--md-on-surface-variant);
+/* The markdown element styles live in m3.css (.md-body), shared with the reply
+   list; only the code-block chrome is card-specific. Heading margins are left
+   to .md-body so its :first-child/:last-child rules keep working. */
+.post__content :deep(code) {
+  font-family: 'Cascadia Code', Consolas, monospace;
+  background: var(--md-surface-container-high);
+  border-radius: 4px;
+  padding: 1px 5px;
 }
 
 .post__content :deep(pre) {
@@ -210,13 +256,6 @@ const REACTION_ICONS: Record<string, string> = {
   padding: 12px;
   overflow-x: auto;
   font-size: 13px;
-}
-
-.post__content :deep(code) {
-  font-family: 'Cascadia Code', Consolas, monospace;
-  background: var(--md-surface-container-high);
-  border-radius: 4px;
-  padding: 1px 5px;
 }
 
 .post__content :deep(pre code) {

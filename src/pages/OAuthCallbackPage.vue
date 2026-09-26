@@ -49,6 +49,17 @@ const ticket = ref('')
 const busyUserId = ref<number | null>(null)
 const creating = ref(false)
 
+/**
+ * Accounts whose avatar failed to load, so the picker can show the initial
+ * instead of a broken image. Keyed by account id because the list is rendered
+ * with a single `v-for`, where one shared flag would hide every avatar.
+ */
+const failedAvatars = ref<Set<number>>(new Set())
+
+function onAvatarError(id: number) {
+  failedAvatars.value = new Set(failedAvatars.value).add(id)
+}
+
 /** Snapshot of the query at mount: the router rewrites it immediately after. */
 const params = {
   accessToken: asString(route.query.access_token),
@@ -176,10 +187,11 @@ onMounted(() => {
           @click="chooseAccount(account.id)"
         >
           <img
-            v-if="account.avatar_url"
+            v-if="account.avatar_url && !failedAvatars.has(account.id)"
             class="oauth__avatar"
             :src="account.avatar_url"
             :alt="account.username"
+            @error="onAvatarError(account.id)"
           />
           <span v-else class="oauth__avatar oauth__avatar--placeholder" aria-hidden="true">
             {{ (account.nickname || account.username).slice(0, 1).toUpperCase() }}

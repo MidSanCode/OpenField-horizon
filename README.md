@@ -102,9 +102,9 @@ Two deployment requirements that follow from that:
 
 ## Rendering user content
 
-Post bodies and replies are rendered with **markdown-it**, configured to match
-the Flutter client, which uses `flutter_markdown` with its default
-GitHub-flavored extension set:
+Post bodies, replies, chat messages and profile bios are rendered with
+**markdown-it**, configured to match the Flutter client, which uses
+`flutter_markdown` with its default GitHub-flavored extension set:
 
 | Option       | Value  | Why                                                       |
 |--------------|--------|-----------------------------------------------------------|
@@ -123,10 +123,19 @@ Two structural rules the markup depends on:
   parser's adoption agency algorithm, which duplicates the outer anchor and
   hoists the paragraph out of the card. The feed card therefore puts its
   permalink on the timestamp and uses a *stretched link*
-  (`.post__time::after`) to keep the whole card clickable.
+  (`.post__time::after`) to keep the whole card clickable. For the same reason
+  the bio has its own block below the name row rather than being appended to
+  the `@handle` line.
 - **Markdown containers must not set `white-space: pre-wrap`.** The renderer
   emits real newlines between block tags, which `pre-wrap` would turn into
   visible blank lines. The shared typography lives in `.md-body` (`m3.css`).
+  Line breaks the sender actually typed survive, because the renderer uses
+  `breaks: true`.
+
+Surfaces that stay plain text, matching the app: group announcements, todos and
+files (`group_extras_pages.dart` renders them with `Text`, not
+`MarkdownContent`), and the locked placeholder for an undecryptable E2EE
+message — that is a status, not user content.
 
 Images that fail to load are replaced with a placeholder rather than leaving
 the browser's broken-image glyph:
@@ -152,9 +161,9 @@ the browser's broken-image glyph:
 | Compose (text, visibility)      | ✅                                                              |
 | Camps (list/search/join/create) | ✅                                                              |
 | Camp feed + camp composer       | ✅                                                              |
-| Profiles + follow               | ✅                                                              |
+| Profiles + follow               | ✅ (bio rendered as markdown)                                   |
 | App announcements + dismissal   | ✅                                                              |
-| Chat (list + plain conversations)| ✅ read/send, group extras read (announcements/todos/files)     |
+| Chat (list + plain conversations)| ✅ read/send, markdown in messages, group extras read (announcements/todos/files) |
 | E2E-encrypted conversations     | ⚠️ no key store: encrypted messages render as a locked placeholder, never as ciphertext |
 | Image/attachment upload         | ❌ composer is text-only for now                                 |
 | Broken image fallback           | ✅ initial for avatars, placeholder for attachments/markdown      |

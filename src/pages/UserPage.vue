@@ -11,8 +11,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useSnackbarStore } from '@/stores/snackbar'
 import { t } from '@/i18n'
 import { useSeo, watchSeo } from '@/composables/seo'
-import { markdownToPlainText } from '@/utils/markdown'
-import { useImageFallback } from '@/composables/imageFallback'
+import { markdownToPlainText, renderMarkdown } from '@/utils/markdown'
+import { useImageFallback, useImagePlaceholder } from '@/composables/imageFallback'
 import type { Post, ProfileUser } from '@/types'
 import PostCard from '@/components/PostCard.vue'
 
@@ -31,6 +31,10 @@ const isSelf = computed(() => auth.user?.id?.toString() === userId.value)
 // A 404'd avatar falls back to the initial, like a missing one.
 const avatarSrc = computed(() => user.value?.avatar_url)
 const { failed: avatarFailed, onError: onAvatarError } = useImageFallback(avatarSrc)
+
+// The bio is markdown (v-html), so its images need the delegated placeholder.
+const bioEl = ref<HTMLElement | null>(null)
+useImagePlaceholder(bioEl)
 
 useSeo({ title: '用户 · 地平线 Horizon' })
 watchSeo(() =>
@@ -98,7 +102,7 @@ onMounted(() => void load())
             <span v-if="user.is_verified" title="Verified">✔</span>
             <span v-if="user.member_active && (user.member_level ?? 0) > 0" class="m3-badge">Lv.{{ user.member_level }}</span>
           </h1>
-          <p class="m3-label-small">@{{ user.username }}<span v-if="user.bio"> · {{ user.bio }}</span></p>
+          <p class="m3-label-small">@{{ user.username }}</p>
           <p class="m3-label-small">
             {{ user.follower_count ?? 0 }} {{ t('followers') }} ·
             {{ user.following_count ?? 0 }} {{ t('following') }} ·
@@ -117,6 +121,11 @@ onMounted(() => void load())
           <RouterLink v-else :to="{ name: 'settings' }" class="m3-text-button">{{ t('settings') }}</RouterLink>
         </div>
       </div>
+
+      <!-- The bio is markdown (MarkdownContent in the app's profile_page.dart)
+           and markdown output is block-level, so it gets its own block below
+           the name row rather than being appended to the @handle line. -->
+      <div v-if="user.bio" ref="bioEl" class="head__bio md-body" v-html="renderMarkdown(user.bio)" />
     </div>
 
     <p v-if="failed" class="empty">{{ t('loadFailed') }}</p>
@@ -180,6 +189,15 @@ onMounted(() => void load())
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/* The bio sits below the name row, separated the way the app's profile page
+   separates it with a divider. */
+.head__bio {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--md-outline-variant);
+  font-size: 14px;
 }
 
 .empty {

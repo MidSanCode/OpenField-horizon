@@ -15,6 +15,8 @@ import { t } from '@/i18n'
 import { useSeo } from '@/composables/seo'
 import { useSnackbarStore } from '@/stores/snackbar'
 import { isEncryptedEnvelope } from '@/utils/e2ee'
+import { renderMarkdown } from '@/utils/markdown'
+import { useImagePlaceholder } from '@/composables/imageFallback'
 
 const route = useRoute()
 const snackbar = useSnackbarStore()
@@ -46,6 +48,10 @@ const isGroup = computed(() => conversation.value?.type === 'group')
 
 /** Number of undecryptable messages, used for the thread-level hint. */
 const lockedCount = computed(() => messages.value.filter((m) => m.locked).length)
+
+// Messages are markdown (v-html), so their images need the delegated
+// placeholder handler; the thread ref already covers every bubble.
+useImagePlaceholder(threadEl)
 
 useSeo({ title: '会话 · 地平线 Horizon' })
 
@@ -216,7 +222,10 @@ onMounted(() => void load())
             <i class="fa-solid fa-lock" aria-hidden="true"></i>
             <span>{{ t('chatEncryptedMessage') }}</span>
           </div>
-          <div v-else class="msg__bubble">{{ m.content }}</div>
+          <!-- Messages are markdown in the app too (MarkdownContent in
+               conversation_page.dart). The locked branch stays plain text: it
+               is a placeholder, not user content. -->
+          <div v-else class="msg__bubble md-body" v-html="renderMarkdown(m.content)" />
         </template>
       </div>
       <p v-if="!loading && messages.length === 0" class="m3-label-small" style="text-align:center">—</p>
@@ -304,8 +313,34 @@ onMounted(() => void load())
   padding: 9px 13px;
   display: inline-block;
   max-width: 78%;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
+  /* No white-space: pre-wrap — the markdown output has real newlines between
+     block tags, which pre-wrap would turn into blank lines. Line breaks the
+     sender typed survive because the renderer uses breaks: true. */
+}
+
+/* Markdown in a bubble. Spacing is left to .md-body, whose :first-child and
+   :last-child rules collapse the edge margins so the bubble's own padding
+   controls the outer spacing; overriding margins here would beat those rules
+   on specificity and remove the gaps between an inline message's paragraphs. */
+.msg__bubble :deep(pre) {
+  background: var(--md-surface-container);
+  border-radius: var(--md-radius-sm);
+  padding: 8px 10px;
+  overflow-x: auto;
+  font-size: 12px;
+}
+
+.msg__bubble :deep(code) {
+  font-family: 'Cascadia Code', Consolas, monospace;
+  background: var(--md-surface-container);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.msg__bubble :deep(pre code) {
+  background: none;
+  padding: 0;
 }
 
 /* An E2EE message web cannot decrypt: muted, with the lock carrying the

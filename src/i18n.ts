@@ -84,6 +84,8 @@ const messages: Record<Locale, Record<string, string>> = {
     announcementDontShow: '不再显示',
     announcementsEmpty: '暂无公告',
     chatEncryptedNotice: '该会话已端到端加密，网页版暂不支持解密，请在 App 中查看。',
+    chatEncryptedMessage: '加密消息，请在 App 中查看',
+    chatEncryptedHistory: '本会话有 {count} 条加密消息，网页版无法解密，请在 App 中查看。',
     chatEmpty: '还没有会话',
     chatSend: '发送',
     chatTodoDone: '标记完成',
@@ -170,6 +172,8 @@ const messages: Record<Locale, Record<string, string>> = {
     announcementDontShow: "Don't show again",
     announcementsEmpty: 'No announcements yet',
     chatEncryptedNotice: 'This conversation is end-to-end encrypted; the web client cannot decrypt it yet — open it in the app.',
+    chatEncryptedMessage: 'Encrypted message — open it in the app',
+    chatEncryptedHistory: 'This conversation holds {count} encrypted message(s) the web client cannot decrypt — open them in the app.',
     chatEmpty: 'No conversations yet',
     chatSend: 'Send',
     chatTodoDone: 'Mark done',
@@ -188,9 +192,18 @@ export function setLocale(locale: Locale): void {
   active = locale
 }
 
-/** Translates a key with fallback to Chinese, then to the key itself. */
-export function t(key: string): string {
-  return messages[active][key] ?? messages.zh[key] ?? key
+/**
+ * Translates a key with fallback to Chinese, then to the key itself.
+ *
+ * [params] fills `{name}` placeholders; an unknown name is left as-is so a
+ * missing argument is visible instead of silently collapsing to "undefined".
+ */
+export function t(key: string, params?: Record<string, string | number>): string {
+  const raw = messages[active][key] ?? messages.zh[key] ?? key
+  if (!params) return raw
+  return raw.replace(/\{(\w+)\}/g, (match, name: string) =>
+    Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : match,
+  )
 }
 
 /** Reactive-ish translator for templates: re-evaluates on re-render. */

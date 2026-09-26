@@ -1,13 +1,15 @@
 <script setup lang="ts">
 /**
  * Conversation list. Signed-in only (router-guarded); unread counts and the
- * last message preview come straight from the server payload.
+ * last message preview come straight from the server payload — encrypted
+ * previews are masked, since web cannot decrypt them.
  */
 import { onMounted, ref } from 'vue'
 import { api } from '@/api'
 import type { Conversation } from '@/types'
 import { t } from '@/i18n'
 import { useSeo } from '@/composables/seo'
+import { isEncryptedEnvelope } from '@/utils/e2ee'
 
 useSeo({ title: '聊天 · 地平线 Horizon' })
 
@@ -31,6 +33,9 @@ onMounted(async () => {
 function preview(c: Conversation): string {
   const last = c.last_message
   if (!last) return '—'
+  // The list must not leak an undecryptable payload either; an E2EE last
+  // message reads as a lock rather than as base64.
+  if (isEncryptedEnvelope(last.content ?? '')) return `🔒 ${t('chatEncryptedMessage')}`
   const prefix = c.type === 'group' && last.sender_name ? `${last.sender_name}: ` : ''
   return prefix + last.content.slice(0, 60)
 }

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 /**
  * One conversation: message thread + composer, and the group extras drawer
- * (announcements / todos / files) for group chats. Encrypted conversations
- * are read-blocked with an explanatory notice — web lacks the E2E key
- * store, so it refuses to render ciphertext as if it were plaintext.
+ * (announcements / todos / files) for group chats. Web has no E2E key store, so
+ * encrypted messages are shown as a locked placeholder rather than as
+ * ciphertext: the envelope is detected per message, which keeps the thread
+ * readable even when a conversation's `encrypted` flag disagrees with its
+ * history (e.g. E2EE was switched off after encrypted messages were sent).
  */
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
@@ -12,12 +14,20 @@ import type { ChatMessage, Conversation, GroupAnnouncement, GroupFile, GroupTodo
 import { t } from '@/i18n'
 import { useSeo } from '@/composables/seo'
 import { useSnackbarStore } from '@/stores/snackbar'
+import { isEncryptedEnvelope } from '@/utils/e2ee'
 
 const route = useRoute()
 const snackbar = useSnackbarStore()
 
+/** A message plus the display flags derived once per load, so the template
+ * never re-parses every payload on each render. */
+interface DisplayMessage extends ChatMessage {
+  /** The content is an E2EE envelope Horizon cannot decrypt. */
+  locked: boolean
+}
+
 const conversation = ref<Conversation | null>(null)
-const messages = ref<ChatMessage[]>([])
+const messages = ref<DisplayMessage[]>([])
 const loading = ref(true)
 const failed = ref(false)
 const draft = ref('')
@@ -34,12 +44,23 @@ const extras = ref<{
 const convId = computed(() => route.params.id as string)
 const isGroup = computed(() => conversation.value?.type === 'group')
 
+/** Number of undecryptable messages, used for the thread-level hint. */
+const lockedCount = computed(() => messages.value.filter((m) => m.locked).length)
+
 useSeo({ title: '会话 · 地平线 Horizon' })
 
 function scrollToEnd() {
   void nextTick(() => {
     threadEl.value?.scrollTo({ top: threadEl.value.scrollHeight })
   })
+}
+
+/** Newest-last order with the encrypted flag resolved. */
+function toDisplay(raw: ChatMessage[] | undefined): DisplayMessage[] {
+  return (raw ?? [])
+    .slice()
+    .reverse()
+    .map((m) => ({ ...m, locked: isEncryptedEnvelope(m.content ?? '') }))
 }
 
 async function load() {
@@ -51,7 +72,7 @@ async function load() {
       api.messages(convId.value),
     ])
     conversation.value = conv
-    messages.value = (msgs.messages ?? []).slice().reverse()
+    messages.value = toDisplay(msgs.messages)
     void api.markRead(convId.value)
     scrollToEnd()
   } catch {
@@ -69,7 +90,7 @@ async function send() {
     await api.sendMessage(Number(convId.value), content)
     draft.value = ''
     const msgs = await api.messages(convId.value)
-    messages.value = (msgs.messages ?? []).slice().reverse()
+    messages.value = toDisplay(msgs.messages)
     scrollToEnd()
   } catch (e) {
     snackbar.show(String(e))
@@ -141,6 +162,15 @@ onMounted(() => void load())
       🔐 {{ t('chatEncryptedNotice') }}
     </div>
 
+    <!-- Only shown when the flag and the history disagree: a conversation that
+         is no longer marked encrypted but still holds undecryptable messages. -->
+    <p
+      v-else-if="lockedCount > 0"
+      class="m3-label-small encrypted-inline"
+    >
+      🔐 {{ t('chatEncryptedHistory', { count: lockedCount }) }}
+    </p>
+
     <div v-if="extrasTab !== 'none'" class="m3-card extras">
       <template v-if="extrasTab === 'announcements'">
         <article v-for="a in extras.announcements" :key="a.id" class="extras__item">
@@ -180,7 +210,13 @@ onMounted(() => void load())
           <div class="msg__meta m3-label-small">
             {{ m.sender_name || `#${m.sender_id}` }} · {{ new Date(m.created_at).toLocaleTimeString() }}
           </div>
-          <div class="msg__bubble">{{ m.content }}</div>
+          <!-- Never print an E2EE envelope: web cannot decrypt it, so show a
+               lock placeholder instead of the raw base64 payload. -->
+          <div v-if="m.locked" class="msg__bubble msg__bubble--locked" :title="t('chatEncryptedMessage')">
+            <i class="fa-solid fa-lock" aria-hidden="true"></i>
+            <span>{{ t('chatEncryptedMessage') }}</span>
+          </div>
+          <div v-else class="msg__bubble">{{ m.content }}</div>
         </template>
       </div>
       <p v-if="!loading && messages.length === 0" class="m3-label-small" style="text-align:center">—</p>
@@ -270,6 +306,23 @@ onMounted(() => void load())
   max-width: 78%;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* An E2EE message web cannot decrypt: muted, with the lock carrying the
+   meaning so the row is never mistaken for ordinary text. */
+.msg__bubble--locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-style: italic;
+  color: var(--md-on-surface-variant);
+  background: transparent;
+  border: 1px dashed var(--md-outline, var(--md-on-surface-variant));
+}
+
+.encrypted-inline {
+  color: var(--md-on-surface-variant);
+  margin: 4px 0 8px;
 }
 
 .composer {
